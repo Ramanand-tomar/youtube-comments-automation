@@ -55,6 +55,7 @@ async function autoReply(youtube) {
         
         // 4. MARK AS REPLIED IN DB
         c.replied = true;
+        c.commentReply = replyText;
         await c.save();
       } catch (ytError) {
         console.error("YouTube API error while replying:", ytError.message);

@@ -57,6 +57,7 @@ exports.postManualReply = async (req, res, youtube) => {
     });
 
     comment.replied = true;
+    comment.commentReply = text;
     await comment.save();
 
     res.status(200).json({ message: "Manual reply posted successfully", commentId, text });
