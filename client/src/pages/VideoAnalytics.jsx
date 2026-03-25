@@ -83,6 +83,11 @@ function CommentAccordion({ category, comments }) {
         </span>
         {open ? <ChevronUp className="w-4 h-4 text-neutral-400" /> : <ChevronDown className="w-4 h-4 text-neutral-400" />}
       </button>
+      {comments.length === 0 && open && (
+        <div className="border-t border-neutral-100 px-6 py-6 text-center">
+          <p className="text-sm text-neutral-400">No comments in this category</p>
+        </div>
+      )}
       {shown.length > 0 && (
         <div className="border-t border-neutral-100 divide-y divide-neutral-100">
           {shown.map((c, i) => (

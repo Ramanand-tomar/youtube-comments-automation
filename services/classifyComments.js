@@ -4,13 +4,36 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const BATCH_SIZE = 50;
 
-const CLASSIFICATION_PROMPT = `You are a YouTube comment classifier. Classify each comment into one or more of these categories (a comment can belong to multiple categories):
+const CLASSIFICATION_PROMPT = `You are an expert YouTube comment classifier. Classify each comment into one or more of these 5 categories. A comment CAN belong to multiple categories if it fits more than one. Be precise and thoughtful.
 
-1. "suggestion" - Next video ideas, topic suggestions, or requests for future content
-2. "appreciation" - Positive feedback, thanks, praise, compliments, or encouragement
-3. "negative" - Criticism, complaints, negative feedback, or dissatisfaction
-4. "success_story" - User sharing their success, achievement, or positive outcome related to the content
-5. "query" - Questions, doubts, requests for help or clarification
+CATEGORIES:
+
+1. "suggestion" — The commenter is requesting or suggesting a SPECIFIC topic, exercise, subject, or idea for a FUTURE video. They want the creator to make content about something.
+   YES: "Can you make a video on sciatica exercises?", "Please do a tutorial on Python", "Next video on weight loss please"
+   NO: "Can you help me with my pain?" (this is a query, not a video suggestion), "Good video" (appreciation)
+
+2. "appreciation" — The commenter is expressing gratitude, praise, admiration, love, or positive sentiment toward the creator or content. Includes greetings with positive intent.
+   YES: "Thank you so much!", "Great video", "You're the best", "Superb thanks a lot", "Love your content", "Namaste sir ji", "Good morning sir", "Good evening sir"
+   NO: "Day 3 done" (this is a success story), "How to do exercise 2?" (this is a query)
+
+3. "negative" — The commenter is expressing dissatisfaction, criticism, complaints, frustration, or negative feedback about the content or creator.
+   YES: "This didn't work for me", "Waste of time", "Bad advice", "You're wrong about this"
+   NO: "I have pain in my leg" (this is sharing experience/query, not criticizing the creator)
+
+4. "success_story" — The commenter is sharing their personal progress, achievement, milestone, routine experience, or results from following the content. Includes progress logs and sharing personal experiences.
+   YES: "Day 2", "Day 3, 4, 5 done", "I've been doing this for a month", "Only exercise 1 and 5 I am able to do", "I lost 5kg following this", "I opted for this for one month instead of regular session", "I need to concentrate on consistency. Because of my daily routine I am unable to do daily"
+   NO: "How long will it take to heal?" (this is a query)
+
+5. "query" — The commenter is asking a genuine question, seeking advice, requesting clarification, or describing their personal medical/health condition seeking help. Includes asking about specific situations.
+   YES: "How many times should I do this?", "I have left leg pain, what should I do?", "Is it safe during pregnancy?", "Doctor told me to get a replacement, can I do this exercise?", "How many days will it take to recover?"
+   NO: "Day 5 done" (success story), "Great video sir" (appreciation), "Please make video on back pain" (suggestion)
+
+IMPORTANT RULES:
+- Simple greetings like "Good morning sir", "Good evening", "Namaste sir ji" are APPRECIATION (showing respect/positivity), NOT queries.
+- Progress updates like "Day 2", "Day 3, 4, 5 done" are SUCCESS_STORY, NOT queries.
+- Comments sharing personal pain/condition AND asking for help get BOTH "query" (for the question part) categories.
+- Comments like "Superb! Can you make a video on X?" get BOTH "appreciation" AND "suggestion".
+- If a comment truly doesn't fit any category well, classify as "query" as a last resort.
 
 Return ONLY a valid JSON array (no markdown, no code blocks) where each element is:
 {"index": <number>, "categories": ["<category_key>", ...]}
