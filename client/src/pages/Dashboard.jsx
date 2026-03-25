@@ -110,6 +110,13 @@ export default function Dashboard() {
       <header className="bg-white border-b border-warm-border sticky top-0 z-40">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-6">
+            <Link
+              to="/"
+              className="flex items-center justify-center w-9 h-9 rounded-xl border border-warm-border bg-warm-gray hover:bg-brand-bg hover:border-brand/30 text-text-secondary hover:text-brand transition-all"
+              title="Back to Home"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
             <Link to="/" className="flex items-center gap-2 group transition-all">
               <div className="w-8 h-8 bg-brand rounded-sm flex items-center justify-center rotate-45 group-hover:rotate-0 transition-transform">
                 <MessageSquare className="w-5 h-5 text-white -rotate-45 group-hover:rotate-0 transition-transform" />

@@ -224,26 +224,56 @@ export const LiveDemoPanel = () => {
   const [videoStatus, setVideoStatus] = useState<"loading" | "ready" | "error">("loading");
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleCanPlay = () => setVideoStatus("ready");
+    const handleError = () => setVideoStatus("error");
+
+    video.addEventListener("canplay", handleCanPlay);
+    video.addEventListener("error", handleError);
+
+    // Also listen for error on source element
+    const source = video.querySelector("source");
+    if (source) {
+      source.addEventListener("error", handleError);
+    }
+
+    // Fallback timeout - if video doesn't load in 8 seconds, show animation
+    const timeout = setTimeout(() => {
+      if (videoRef.current && videoRef.current.readyState < 3) {
+        setVideoStatus("error");
+      }
+    }, 8000);
+
+    return () => {
+      video.removeEventListener("canplay", handleCanPlay);
+      video.removeEventListener("error", handleError);
+      if (source) source.removeEventListener("error", handleError);
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  const videoSrc = "./demo-video.mp4";
+
   return (
     <>
       {videoStatus !== "error" && (
         <div
-          className={`w-full max-w-5xl mx-auto mt-10 mb-12 rounded-2xl border border-neutral-200 shadow-xl overflow-hidden bg-black ${
+          className={`w-full max-w-5xl mx-auto mt-10 mb-12 rounded-2xl border border-neutral-200 shadow-xl overflow-hidden ${
             videoStatus === "loading" ? "hidden" : ""
           }`}
         >
           <video
             ref={videoRef}
-            className="w-full h-auto block"
+            className="w-full block object-cover aspect-[16/10]"
             autoPlay
             loop
             muted
             playsInline
-            onCanPlay={() => setVideoStatus("ready")}
-            onError={() => setVideoStatus("error")}
-          >
-            <source src="/demo-video.mp4" type="video/mp4" />
-          </video>
+            src={videoSrc}
+          />
         </div>
       )}
 
