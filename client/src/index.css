@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Inter';
+  src: url('https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2') format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2') format("woff2");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2') format("woff2");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2') format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Degular Display';
+  src: url('https://fonts.BeyondChats.com/Degular/DegularDisplay-Semibold.woff2') format("woff2");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@theme {
+  --color-brand: #ff4f00; /* BeyondChats Orange */
+  --color-brand-light: #ff734d;
+  --color-brand-dark: #cc3f00;
+  --color-brand-bg: #fffbf9;
+  --color-brand-bg-deep: #fff3ed;
+  --color-warm-white: #f5f6fa;
+  --color-warm-gray: #f9f7f3;
+  --color-warm-border: #e8e8ed;
+  --color-text-primary: #17171e;
+  --color-text-secondary: #494957;
+  --color-text-muted: #6d6d80;
+  --color-yt-red: #FF0000;
+  --color-success: #1a7f37;
+  --color-success-bg: #dafbe1;
+
+  /* shadcn/ui-like variables for landing page compatibility */
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  body {
+    @apply m-0 antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--color-text-primary);
+    background: var(--color-warm-white);
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.7s ease-out forwards;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.7s ease-out forwards;
+  }
+  .animate-slide-up-delay {
+    animation: slideUp 0.7s ease-out 0.15s forwards;
+    opacity: 0;
+  }
+  .animate-slide-up-delay-2 {
+    animation: slideUp 0.7s ease-out 0.3s forwards;
+    opacity: 0;
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-pulse-slow {
+    animation: pulseSlow 3s ease-in-out infinite;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes pulseSlow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+}

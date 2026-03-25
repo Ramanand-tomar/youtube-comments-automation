@@ -1,13 +1,12 @@
-const { google } = require("googleapis");
 const Comment = require("../models/Comment");
 
-async function fetchComments(youtube) {
+async function fetchComments(youtube, userId, channelId) {
   try {
-    console.log("Fetching comments for channel:", process.env.CHANNEL_ID);
+    console.log(`Fetching comments for user ${userId}, channel: ${channelId}`);
     const res = await youtube.commentThreads.list({
       part: "snippet",
-      allThreadsRelatedToChannelId: process.env.CHANNEL_ID,
-      maxResults: 50, // Increased for better coverage
+      allThreadsRelatedToChannelId: channelId,
+      maxResults: 50,
       order: "time"
     });
 
@@ -16,10 +15,7 @@ async function fetchComments(youtube) {
       return;
     }
 
-    // 1. Collect unique video IDs
     const videoIds = [...new Set(res.data.items.map(item => item.snippet.videoId))];
-    
-    // 2. Fetch video titles
     const videoTitles = {};
     if (videoIds.length > 0) {
       const videoRes = await youtube.videos.list({
@@ -37,13 +33,13 @@ async function fetchComments(youtube) {
       const videoId = item.snippet.videoId;
       const videoTitle = videoTitles[videoId] || "Unknown Video";
 
-      // Use upsert to avoid duplicates
       await Comment.findOneAndUpdate(
-        { commentId: item.id },
+        { userId, commentId: item.id },
         {
+          userId,
           commentId: item.id,
-          videoId: videoId,
-          videoTitle: videoTitle,
+          videoId,
+          videoTitle,
           text: comment.textDisplay,
           author: comment.authorDisplayName,
           createdAt: comment.publishedAt
@@ -52,9 +48,9 @@ async function fetchComments(youtube) {
       );
       count++;
     }
-    console.log(`Successfully fetched and stored ${count} comments with video titles.`);
+    console.log(`Stored ${count} comments for user ${userId}.`);
   } catch (error) {
-    console.error("Error fetching comments from YouTube:", error.message);
+    console.error("Error fetching comments:", error.message);
   }
 }
 

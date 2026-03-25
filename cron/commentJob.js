@@ -1,9 +1,9 @@
 const fetchComments = require("../services/fetchComments");
 const autoReply = require("../services/autoReply");
 
-async function runJob(youtube) {
-  await fetchComments(youtube);
-  await autoReply(youtube);
+async function runJob(youtube, userId, channelId, promptTemplate) {
+  await fetchComments(youtube, userId, channelId);
+  await autoReply(youtube, userId, promptTemplate);
 }
 
 module.exports = runJob;
