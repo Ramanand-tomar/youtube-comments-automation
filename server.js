@@ -9,10 +9,35 @@ const { authMiddleware } = require("./middleware/auth");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Environment Variable Validation
+const requiredEnvVars = [
+  "MONGO_URI",
+  "CLIENT_ID",
+  "CLIENT_SECRET",
+  "REDIRECT_URI",
+  "GEMINI_API_KEY",
+  "REFRESH_TOKEN",
+  "CHANNEL_ID",
+  "JWT_SECRET"
+];
+
+const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+if (missingVars.length > 0) {
+  console.error(`ERROR: Missing required environment variables: ${missingVars.join(", ")}`);
+  console.error("Please set these in the Render Dashboard.");
+  process.exit(1);
+}
+
 // Connect to MongoDB
-connectDB().then(() => {
-  initAllCrons();
-});
+connectDB()
+  .then(() => {
+    console.log("Database connection successful. Initializing crons...");
+    initAllCrons();
+  })
+  .catch((err) => {
+    console.error("FAILED to initialize server:", err.message);
+    process.exit(1);
+  });
 
 // Middleware
 app.use(cors({
