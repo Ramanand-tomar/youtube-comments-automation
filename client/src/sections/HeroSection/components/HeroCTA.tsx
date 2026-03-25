@@ -32,6 +32,12 @@ export const HeroCTA = () => {
           </div>
         </a>
       </div>
+      <a
+        href="/analytics"
+        className="box-border flex items-center justify-center gap-2 rounded-full border-2 border-orange-600 px-8 py-3 text-sm font-bold text-orange-600 transition-all hover:bg-orange-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-2 font-inter md:text-base"
+      >
+        Try Video Analytics — Free
+      </a>
     </div>
   );
 };

@@ -40,4 +40,11 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  // Public Analytics
+  analyzeVideo: (videoUrl) =>
+    request("/public/analyze", {
+      method: "POST",
+      body: JSON.stringify({ videoUrl }),
+    }),
 };

@@ -27,6 +27,7 @@ const navItems: NavItem[] = [
   { label: "Features", href: "#features" },
   { label: "How it Works", href: "#how-it-works" },
   { label: "FAQ", href: "#faq" },
+  { label: "Video Analytics", href: "/analytics" },
   { label: "Dashboard", href: "/dashboard" },
 ];
 
@@ -67,10 +68,15 @@ const NavItemComponent = ({ item }: { item: NavItem }) => {
   }, []);
 
   if (!item.dropdown) {
+    const isActive = item.href && !item.href.startsWith("#") && window.location.pathname === item.href;
     return (
       <a
         href={item.href}
-        className="text-sm font-medium text-neutral-700 hover:text-orange-600 px-3 py-2 rounded-lg hover:bg-orange-50 transition-colors"
+        className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${
+          isActive
+            ? "text-orange-600 bg-orange-50 font-semibold"
+            : "text-neutral-700 hover:text-orange-600 hover:bg-orange-50"
+        }`}
       >
         {item.label}
       </a>

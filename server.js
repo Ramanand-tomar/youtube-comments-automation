@@ -50,6 +50,10 @@ app.use(express.json());
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
+// Public Routes (no auth required)
+const publicRoutes = require("./routes/publicRoutes");
+app.use("/api/public", publicRoutes);
+
 // Dashboard Routes (protected)
 const commentController = require("./controllers/commentController");
 const settingsRoutes = require("./routes/settingsRoutes");
