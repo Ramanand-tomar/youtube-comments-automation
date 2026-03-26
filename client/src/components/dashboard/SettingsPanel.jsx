@@ -112,7 +112,7 @@ export default function SettingsPanel({ onTrigger, onSettingsSaved, videos = [] 
             </div>
             <div className="h-7 w-16 bg-orange-200 rounded-full" />
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-3">
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-white/60 rounded-xl px-4 py-4 space-y-2">
                 <div className="w-4 h-4 bg-orange-100 rounded mx-auto" />
@@ -211,7 +211,7 @@ export default function SettingsPanel({ onTrigger, onSettingsSaved, videos = [] 
         </div>
 
         {/* Mini stats row */}
-        <div className="relative mt-5 grid grid-cols-3 gap-3">
+        <div className="relative mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { icon: Activity,    label: "Status",   value: settings.autoReplyEnabled ? "Running" : "Off" },
             { icon: Clock,       label: "Interval", value: INTERVALS.find(i => i.value === settings.cronInterval)?.label ?? "—" },

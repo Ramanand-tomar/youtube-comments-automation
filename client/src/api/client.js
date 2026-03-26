@@ -47,4 +47,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ videoUrl }),
     }),
+  deleteAnalysis: (videoId) =>
+    request(`/public/analyze/${videoId}`, { method: "DELETE" }),
 };

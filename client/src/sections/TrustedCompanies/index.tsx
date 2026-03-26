@@ -9,7 +9,7 @@ export const TrustedCompanies = () => {
               their audience — no coding required.
             </div>
           </h3>
-          <ul data-uid="yJt6x7acMxr41QAY" className="box-border caret-transparent gap-x-10 grid grid-flow-col justify-center list-none min-h-[auto] min-w-[auto] gap-y-10 pl-0 md:gap-x-20 md:gap-y-20">
+          <ul data-uid="yJt6x7acMxr41QAY" className="box-border caret-transparent gap-x-10 flex flex-wrap justify-center list-none min-h-[auto] min-w-[auto] gap-y-6 pl-0 md:gap-x-20 md:gap-y-20">
             <li data-uid="KLSh3qFQIhKruUkJ" className="self-center box-border caret-transparent hidden justify-self-center min-h-0 min-w-0 md:block md:min-h-[auto] md:min-w-[auto]">
               <span data-uid="SlFCkBiq1SKHTZc2" className="box-border caret-transparent">
                 <img data-uid="KCvz52KfsHjdEAew"

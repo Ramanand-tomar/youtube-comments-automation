@@ -135,4 +135,23 @@ router.post("/analyze", rateLimit, async (req, res) => {
   }
 });
 
+router.delete("/analyze/:videoId", rateLimit, async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    if (!videoId) {
+      return res.status(400).json({ error: "videoId is required." });
+    }
+
+    const result = await AnalyzedVideo.findOneAndDelete({ videoId });
+    if (!result) {
+      return res.status(404).json({ error: "No cached analysis found for this video." });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Delete analysis error:", err.message);
+    res.status(500).json({ error: "Failed to delete analysis." });
+  }
+});
+
 module.exports = router;

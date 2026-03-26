@@ -1,7 +1,7 @@
 export const HeroHeading = () => {
   return (
     <hgroup className="items-center flex flex-col text-center px-4">
-      <h1 className="text-3xl font-bold tracking-tight leading-tight max-w-none mb-6 font-degular_display md:text-6xl md:leading-[1.1] md:max-w-[1000px]">
+      <h1 className="text-3xl font-bold tracking-tight leading-tight max-w-none mb-6 font-degular_display sm:text-4xl md:text-6xl md:leading-[1.1] md:max-w-[1000px]">
         Scale Your YouTube Engagement with <span className="text-orange-600">BeyondChats AI</span>
       </h1>
       <p className="text-lg text-neutral-600 max-w-[800px] mb-8 font-inter md:text-xl md:leading-relaxed">

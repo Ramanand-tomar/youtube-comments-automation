@@ -10,7 +10,7 @@ const AIIllustration = () => (
       </div>
 
       {/* Main flow */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
 
         {/* Input: YouTube comment */}
         <div className="flex-1 bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">

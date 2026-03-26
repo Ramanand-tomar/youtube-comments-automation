@@ -32,7 +32,7 @@ const navItems: NavItem[] = [
 ];
 
 const DropdownMenu = ({ items }: { items: DropdownItem[] }) => (
-  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-white rounded-2xl border border-neutral-200 shadow-xl p-2 z-50">
+  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 max-w-[calc(100vw-2rem)] sm:w-72 bg-white rounded-2xl border border-neutral-200 shadow-xl p-2 z-50">
     {items.map((item) => (
       <a
         key={item.label}

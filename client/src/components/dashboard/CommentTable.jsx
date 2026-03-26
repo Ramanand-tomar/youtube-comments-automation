@@ -115,7 +115,7 @@ export default function CommentTable({ selectedVideoId, refreshKey }) {
                 {!c.replied && (
                   <button
                     onClick={() => setReplyTarget(c)}
-                    className="shrink-0 inline-flex items-center gap-2 bg-brand text-white px-6 py-2.5 rounded-xl text-[0.8125rem] font-bold hover:shadow-lg hover:shadow-brand/20 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                    className="shrink-0 inline-flex items-center gap-2 bg-brand text-white px-4 sm:px-6 py-2.5 rounded-xl text-[0.8125rem] font-bold hover:shadow-lg hover:shadow-brand/20 transition-all cursor-pointer sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Reply className="w-4 h-4" />
                     Reply

@@ -4,36 +4,45 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const BATCH_SIZE = 50;
 
-const CLASSIFICATION_PROMPT = `You are an expert YouTube comment classifier. Classify each comment into one or more of these 5 categories. A comment CAN belong to multiple categories if it fits more than one. Be precise and thoughtful.
+const CLASSIFICATION_PROMPT = `You are an expert YouTube comment classifier. Classify each comment into one or more of these categories. A comment CAN belong to multiple categories if it genuinely fits more than one. Be STRICT and precise — only assign a category when the comment clearly matches.
 
 CATEGORIES:
 
 1. "suggestion" — The commenter is requesting or suggesting a SPECIFIC topic, exercise, subject, or idea for a FUTURE video. They want the creator to make content about something.
    YES: "Can you make a video on sciatica exercises?", "Please do a tutorial on Python", "Next video on weight loss please"
-   NO: "Can you help me with my pain?" (this is a query, not a video suggestion), "Good video" (appreciation)
+   NO: "Can you help me with my pain?" (query, not a video suggestion), "Good video" (appreciation)
 
-2. "appreciation" — The commenter is expressing gratitude, praise, admiration, love, or positive sentiment toward the creator or content. Includes greetings with positive intent.
-   YES: "Thank you so much!", "Great video", "You're the best", "Superb thanks a lot", "Love your content", "Namaste sir ji", "Good morning sir", "Good evening sir"
-   NO: "Day 3 done" (this is a success story), "How to do exercise 2?" (this is a query)
+2. "appreciation" — The commenter is expressing genuine gratitude, praise, admiration, or positive sentiment toward the creator or content. Must show clear positive intent beyond a single neutral word.
+   YES: "Thank you so much!", "Great video", "You're the best", "Superb thanks a lot", "Love your content", "Namaste sir ji", "Good morning sir"
+   NO: "Day 3 done" (success story), "Ok" (too vague, not appreciation), "Okay" (neutral acknowledgment)
 
 3. "negative" — The commenter is expressing dissatisfaction, criticism, complaints, frustration, or negative feedback about the content or creator.
    YES: "This didn't work for me", "Waste of time", "Bad advice", "You're wrong about this"
-   NO: "I have pain in my leg" (this is sharing experience/query, not criticizing the creator)
+   NO: "I have pain in my leg" (sharing experience/query, not criticizing the creator)
 
-4. "success_story" — The commenter is sharing their personal progress, achievement, milestone, routine experience, or results from following the content. Includes progress logs and sharing personal experiences.
-   YES: "Day 2", "Day 3, 4, 5 done", "I've been doing this for a month", "Only exercise 1 and 5 I am able to do", "I lost 5kg following this", "I opted for this for one month instead of regular session", "I need to concentrate on consistency. Because of my daily routine I am unable to do daily"
-   NO: "How long will it take to heal?" (this is a query)
+4. "success_story" — The commenter is sharing their personal progress, achievement, milestone, routine experience, or results from following the content.
+   YES: "Day 2", "Day 3, 4, 5 done", "I've been doing this for a month", "I lost 5kg following this"
+   NO: "How long will it take to heal?" (query)
 
-5. "query" — The commenter is asking a genuine question, seeking advice, requesting clarification, or describing their personal medical/health condition seeking help. Includes asking about specific situations.
-   YES: "How many times should I do this?", "I have left leg pain, what should I do?", "Is it safe during pregnancy?", "Doctor told me to get a replacement, can I do this exercise?", "How many days will it take to recover?"
-   NO: "Day 5 done" (success story), "Great video sir" (appreciation), "Please make video on back pain" (suggestion)
+5. "query" — The commenter is asking a genuine, specific question, seeking advice, requesting clarification, or describing a personal situation while seeking help. Must contain an actual question or a clear request for guidance.
+   YES: "How many times should I do this?", "I have left leg pain, what should I do?", "Is it safe during pregnancy?", "How many days will it take to recover?"
+   NO: "Day 5 done" (success story), "Great video sir" (appreciation), "Ok" (not a question)
+
+6. "irrelevant" — The comment is vague, generic, off-topic, spam, self-promotion, meaningless, or does NOT clearly fit any of the above 5 categories. This includes:
+   - Single-word reactions with no clear sentiment: "Okay", "Ok", "Hmm", "First", "Haha", "Lol"
+   - Random or unintelligible text, emojis-only comments, timestamps-only
+   - Spam, self-promotion, or completely off-topic comments
+   - Generic filler that adds no meaning: "Nice", "Wow" (unless clearly enthusiastic praise)
+   YES: "Okay", "Ok", "Hmm", "First", "...", "Lol", "Check out my channel", random gibberish
+   NO: "Nice video, very helpful!" (this IS appreciation), "Ok so how do I do step 3?" (this IS a query)
 
 IMPORTANT RULES:
-- Simple greetings like "Good morning sir", "Good evening", "Namaste sir ji" are APPRECIATION (showing respect/positivity), NOT queries.
-- Progress updates like "Day 2", "Day 3, 4, 5 done" are SUCCESS_STORY, NOT queries.
-- Comments sharing personal pain/condition AND asking for help get BOTH "query" (for the question part) categories.
+- Be STRICT: do NOT force a comment into suggestion/appreciation/negative/success_story/query unless it clearly belongs. Use "irrelevant" for anything ambiguous or low-content.
+- "query" is for REAL questions or help requests, NOT a catch-all. A comment must contain a question, a described problem seeking help, or a request for clarification to be a "query".
+- Simple greetings like "Good morning sir", "Namaste sir ji" are APPRECIATION (showing respect/positivity).
+- Progress updates like "Day 2", "Day 3 done" are SUCCESS_STORY.
+- Comments sharing personal pain/condition AND asking for help get BOTH "query" and relevant categories.
 - Comments like "Superb! Can you make a video on X?" get BOTH "appreciation" AND "suggestion".
-- If a comment truly doesn't fit any category well, classify as "query" as a last resort.
 
 Return ONLY a valid JSON array (no markdown, no code blocks) where each element is:
 {"index": <number>, "categories": ["<category_key>", ...]}
@@ -75,7 +84,7 @@ function parseGeminiResponse(text) {
   return null;
 }
 
-const VALID_CATEGORIES = ["suggestion", "appreciation", "negative", "success_story", "query"];
+const VALID_CATEGORIES = ["suggestion", "appreciation", "negative", "success_story", "query", "irrelevant"];
 
 async function classifyBatch(comments, startIndex) {
   const prompt = buildBatchPrompt(comments, startIndex);
@@ -127,15 +136,23 @@ async function classifyComments(comments) {
     negative: 0,
     success_story: 0,
     query: 0,
+    irrelevant: 0,
     total: comments.length,
   };
 
+  const DISPLAY_CATEGORIES = ["suggestion", "appreciation", "negative", "success_story", "query"];
+
   const classified = comments.map((comment, idx) => {
-    const categories = categoryMap[idx] || ["query"];
-    for (const cat of categories) {
-      summary[cat]++;
+    const categories = categoryMap[idx] || ["irrelevant"];
+    const displayCats = categories.filter((c) => DISPLAY_CATEGORIES.includes(c));
+    if (displayCats.length > 0) {
+      for (const cat of displayCats) {
+        summary[cat]++;
+      }
+    } else {
+      summary.irrelevant++;
     }
-    return { ...comment, categories };
+    return { ...comment, categories: displayCats.length > 0 ? displayCats : ["irrelevant"] };
   });
 
   return { classified, summary };

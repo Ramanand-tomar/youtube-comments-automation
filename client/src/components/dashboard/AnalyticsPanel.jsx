@@ -112,17 +112,19 @@ export default function AnalyticsPanel({ refreshKey }) {
       <div className="relative bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl p-6 overflow-hidden border border-orange-200">
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-orange-200/40 rounded-full" />
         <div className="absolute -bottom-6 -right-4 w-20 h-20 bg-orange-200/40 rounded-full" />
-        <div className="relative flex items-center gap-4 flex-wrap">
-          <div className="w-12 h-12 bg-brand rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-            <TrendingUp className="w-7 h-7 text-white" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-brand rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+              <TrendingUp className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-[1.125rem] font-bold text-text-primary">Analytics Dashboard</h2>
+              <p className="text-[0.8125rem] text-orange-700 mt-0.5">
+                Performance overview for the last {days} days
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-[1.125rem] font-bold text-text-primary">Analytics Dashboard</h2>
-            <p className="text-[0.8125rem] text-orange-700 mt-0.5">
-              Performance overview for the last {days} days
-            </p>
-          </div>
-          <div className="ml-auto flex gap-1.5">
+          <div className="sm:ml-auto flex gap-1.5">
             {rangeOptions.map((opt) => (
               <button
                 key={opt.value}

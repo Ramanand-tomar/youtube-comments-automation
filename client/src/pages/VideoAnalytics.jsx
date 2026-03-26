@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -6,6 +6,7 @@ import {
   Search, Loader2, Lightbulb, ThumbsUp, ThumbsDown,
   Trophy, HelpCircle, MessageSquare, ChevronDown, ChevronUp,
   ArrowLeft, BarChart3, Eye, Heart, Play, ExternalLink,
+  CheckCircle2, CircleDot, Trash2, AlertTriangle, X,
 } from "lucide-react";
 import { api } from "../api/client";
 import { Navbar } from "../sections/Navbar";
@@ -41,6 +42,93 @@ function StatCard({ icon: Icon, label, value, color, bgClass, textClass, borderC
   );
 }
 
+const PROGRESS_STEPS = [
+  { label: "Fetching video info", duration: 2000 },
+  { label: "Retrieving comments from YouTube", duration: 4000 },
+  { label: "Classifying comments with AI", duration: 6000 },
+  { label: "Generating analytics report", duration: 3000 },
+];
+
+function AnalysisProgress({ loading }) {
+  const [activeStep, setActiveStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!loading) {
+      setActiveStep(0);
+      setProgress(0);
+      return;
+    }
+
+    let step = 0;
+    let elapsed = 0;
+    const totalDuration = PROGRESS_STEPS.reduce((s, p) => s + p.duration, 0);
+    const tick = 100;
+
+    intervalRef.current = setInterval(() => {
+      elapsed += tick;
+
+      // Calculate cumulative duration up to current step
+      let cumulative = 0;
+      for (let i = 0; i <= step; i++) cumulative += PROGRESS_STEPS[i].duration;
+
+      if (elapsed >= cumulative && step < PROGRESS_STEPS.length - 1) {
+        step++;
+        setActiveStep(step);
+      }
+
+      // Progress goes up to 95% max (completes on actual response)
+      const pct = Math.min((elapsed / totalDuration) * 95, 95);
+      setProgress(pct);
+    }, tick);
+
+    return () => clearInterval(intervalRef.current);
+  }, [loading]);
+
+  if (!loading) return null;
+
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 mb-8">
+      {/* Progress bar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-semibold text-neutral-700">Analyzing video...</span>
+          <span className="text-sm font-bold text-orange-600">{Math.round(progress)}%</span>
+        </div>
+        <div className="w-full h-2.5 bg-neutral-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Steps */}
+      <div className="space-y-3">
+        {PROGRESS_STEPS.map((step, i) => {
+          const isDone = i < activeStep;
+          const isActive = i === activeStep;
+          return (
+            <div key={i} className="flex items-center gap-3">
+              {isDone ? (
+                <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+              ) : isActive ? (
+                <Loader2 className="w-5 h-5 text-orange-500 animate-spin shrink-0" />
+              ) : (
+                <CircleDot className="w-5 h-5 text-neutral-300 shrink-0" />
+              )}
+              <span className={`text-sm ${isDone ? "text-green-600 font-medium" : isActive ? "text-orange-700 font-semibold" : "text-neutral-400"}`}>
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.key, c]));
 
 function CategoryBadges({ categories, currentCategory }) {
@@ -72,7 +160,7 @@ function CommentAccordion({ category, comments }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-6 py-4 flex items-center gap-3 hover:bg-neutral-50 transition-colors cursor-pointer"
+        className="w-full px-4 sm:px-6 py-4 flex items-center gap-3 hover:bg-neutral-50 transition-colors cursor-pointer"
       >
         <div className={`w-8 h-8 rounded-lg ${category.bg} flex items-center justify-center shrink-0`}>
           <Icon className={`w-4 h-4 ${category.text}`} />
@@ -89,29 +177,31 @@ function CommentAccordion({ category, comments }) {
         </div>
       )}
       {shown.length > 0 && (
-        <div className="border-t border-neutral-100 divide-y divide-neutral-100">
-          {shown.map((c, i) => (
-            <div key={i} className="px-6 py-3 flex items-start gap-3">
-              <div className="w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-[0.6rem] font-bold text-neutral-500">
-                  {c.author?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
-                </span>
+        <div className="border-t border-neutral-100">
+          <div className={`divide-y divide-neutral-100 ${open ? "max-h-[400px] overflow-y-auto" : ""}`}>
+            {shown.map((c, i) => (
+              <div key={i} className="px-4 sm:px-6 py-3 flex items-start gap-3">
+                <div className="w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[0.6rem] font-bold text-neutral-500">
+                    {c.author?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-neutral-500">{c.author}</p>
+                  <p className="text-sm text-neutral-800 mt-0.5 break-words" dangerouslySetInnerHTML={{ __html: c.text }} />
+                  <CategoryBadges categories={c.categories} currentCategory={category.key} />
+                </div>
+                {c.likeCount > 0 && (
+                  <span className="text-xs text-neutral-400 shrink-0 mt-1">{c.likeCount} likes</span>
+                )}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-neutral-500">{c.author}</p>
-                <p className="text-sm text-neutral-800 mt-0.5 break-words" dangerouslySetInnerHTML={{ __html: c.text }} />
-                <CategoryBadges categories={c.categories} currentCategory={category.key} />
-              </div>
-              {c.likeCount > 0 && (
-                <span className="text-xs text-neutral-400 shrink-0 mt-1">{c.likeCount} likes</span>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
           {!open && comments.length > 3 && (
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="w-full px-6 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50 transition-colors cursor-pointer"
+              className="w-full px-4 sm:px-6 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50 border-t border-neutral-100 transition-colors cursor-pointer"
             >
               Show all {comments.length} comments
             </button>
@@ -122,11 +212,65 @@ function CommentAccordion({ category, comments }) {
   );
 }
 
+function ConfirmModal({ open, onClose, onConfirm, deleting }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-4 sm:p-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition-colors cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        <div className="flex flex-col items-center text-center">
+          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-neutral-900 mb-1">Clear Analysis?</h3>
+          <p className="text-sm text-neutral-500 mb-6">
+            This will delete the cached analysis from the database. You can re-analyze the video anytime.
+          </p>
+          <div className="flex gap-3 w-full">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={deleting}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
+            >
+              No, Keep It
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={deleting}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:bg-red-300 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Yes, Clear It"
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function VideoAnalytics() {
   const [videoUrl, setVideoUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleAnalyze(e) {
     e.preventDefault();
@@ -146,13 +290,32 @@ export default function VideoAnalytics() {
     }
   }
 
+  async function handleDelete() {
+    if (!results?.videoId) return;
+    setDeleting(true);
+    try {
+      await api.deleteAnalysis(results.videoId);
+      setResults(null);
+      setShowDeleteModal(false);
+    } catch (err) {
+      setError(err.message || "Failed to delete analysis.");
+      setShowDeleteModal(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const classifiedTotal = results
+    ? results.summary.total - (results.summary.irrelevant || 0)
+    : 0;
+
   const pieData = results
     ? CATEGORIES.map((cat) => ({
         name: cat.label,
         value: results.summary[cat.key] || 0,
         color: cat.color,
-        pct: results.summary.total > 0
-          ? Math.round(((results.summary[cat.key] || 0) / results.summary.total) * 100)
+        pct: classifiedTotal > 0
+          ? Math.round(((results.summary[cat.key] || 0) / classifiedTotal) * 100)
           : 0,
       })).filter((d) => d.value > 0)
     : [];
@@ -220,64 +383,8 @@ export default function VideoAnalytics() {
           </div>
         </form>
 
-        {/* Loading skeleton */}
-        {loading && (
-          <div className="space-y-6 mb-8 animate-pulse">
-            {/* Video info skeleton */}
-            <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
-              <div className="flex flex-col sm:flex-row">
-                <div className="shrink-0 sm:w-72 h-40 bg-neutral-200" />
-                <div className="p-5 flex-1 space-y-3">
-                  <div className="h-5 bg-neutral-200 rounded w-3/4" />
-                  <div className="h-4 bg-neutral-100 rounded w-1/3" />
-                  <div className="flex gap-4 mt-2">
-                    <div className="h-3 bg-neutral-100 rounded w-20" />
-                    <div className="h-3 bg-neutral-100 rounded w-16" />
-                    <div className="h-3 bg-neutral-100 rounded w-24" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Stat cards skeleton */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-white rounded-2xl border border-neutral-200 p-4 flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 bg-neutral-200 rounded-xl" />
-                  <div className="h-2.5 bg-neutral-200 rounded w-16" />
-                  <div className="h-7 bg-neutral-200 rounded w-10" />
-                </div>
-              ))}
-            </div>
-
-            {/* Chart skeleton */}
-            <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-neutral-200 bg-neutral-50 flex items-center gap-2.5">
-                <div className="w-7 h-7 bg-neutral-200 rounded-lg" />
-                <div className="h-4 bg-neutral-200 rounded w-40" />
-              </div>
-              <div className="flex items-center justify-center h-[300px]">
-                <div className="w-44 h-44 rounded-full border-[20px] border-neutral-200" />
-              </div>
-            </div>
-
-            {/* Category accordions skeleton */}
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-neutral-200 shadow-sm px-6 py-4 flex items-center gap-3">
-                <div className="w-8 h-8 bg-neutral-200 rounded-lg" />
-                <div className="h-4 bg-neutral-200 rounded flex-1 max-w-[160px]" />
-                <div className="h-6 bg-neutral-100 rounded-full w-10 ml-auto" />
-              </div>
-            ))}
-
-            {/* Loading message overlay */}
-            <div className="text-center">
-              <Loader2 className="w-6 h-6 text-orange-600 animate-spin mx-auto" />
-              <p className="text-sm font-semibold text-neutral-700 mt-3">Fetching and analyzing comments...</p>
-              <p className="text-xs text-neutral-500 mt-1">This may take a moment for videos with many comments</p>
-            </div>
-          </div>
-        )}
+        {/* Progress tracker */}
+        <AnalysisProgress loading={loading} />
 
         {/* Error state */}
         {error && (
@@ -286,9 +393,29 @@ export default function VideoAnalytics() {
           </div>
         )}
 
+        {/* Confirm delete modal */}
+        <ConfirmModal
+          open={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+          deleting={deleting}
+        />
+
         {/* Results */}
         {results && (
           <div className="space-y-6">
+            {/* Clear analysis button */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear Analysis
+              </button>
+            </div>
+
             {/* Video info panel */}
             {results.videoInfo?.title && (
               <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
@@ -352,7 +479,7 @@ export default function VideoAnalytics() {
             )}
 
             {/* Summary stat cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
               <StatCard
                 icon={MessageSquare}
                 label="Total Comments"
@@ -427,6 +554,9 @@ export default function VideoAnalytics() {
             {results.totalFetched && (
               <p className="text-center text-xs text-neutral-400">
                 Analyzed {results.totalFetched} comments from this video
+                {results.summary.irrelevant > 0 && (
+                  <span> &middot; {results.summary.irrelevant} generic/irrelevant comments filtered out</span>
+                )}
               </p>
             )}
           </div>

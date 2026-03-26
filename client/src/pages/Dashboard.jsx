@@ -83,7 +83,7 @@ export default function Dashboard() {
         {/* Skeleton body */}
         <div className="max-w-[1230px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
           <div className="h-14 bg-white rounded-2xl border border-warm-border animate-pulse" />
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-24 bg-white rounded-2xl border border-warm-border animate-pulse" />
             ))}
@@ -177,7 +177,7 @@ export default function Dashboard() {
             {tab === "overview" && (
               <div className="space-y-5">
                 {/* Sync bar */}
-                <div className="flex items-center justify-between bg-white rounded-2xl border border-warm-border px-5 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white rounded-2xl border border-warm-border px-5 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                   <p className="text-[0.8125rem] text-text-secondary">
                     {videos.length > 0
                       ? `${videos.length} video(s) with comments`
@@ -200,7 +200,7 @@ export default function Dashboard() {
                 {loadingVideos ? (
                   <div className="space-y-5">
                     {/* Stats skeleton */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {[1, 2, 3].map((i) => (
                         <div key={i} className="bg-white rounded-2xl border border-warm-border p-5 animate-pulse">
                           <div className="flex items-center gap-3">

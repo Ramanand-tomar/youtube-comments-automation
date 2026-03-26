@@ -106,7 +106,7 @@ const AnimationFallback = () => {
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-center gap-4 px-6 py-8 bg-white min-w-[140px]">
+        <div className="flex flex-col items-center justify-center gap-4 px-4 sm:px-6 py-6 sm:py-8 bg-white md:min-w-[140px]">
           <div
             className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all duration-500 ${
               step === 2
@@ -234,18 +234,15 @@ export const LiveDemoPanel = () => {
     video.addEventListener("canplay", handleCanPlay);
     video.addEventListener("error", handleError);
 
-    // Also listen for error on source element
     const source = video.querySelector("source");
-    if (source) {
-      source.addEventListener("error", handleError);
-    }
+    if (source) source.addEventListener("error", handleError);
 
-    // Fallback timeout - if video doesn't load in 8 seconds, show animation
+    // Fallback timeout - if video doesn't load in 15 seconds, show animation
     const timeout = setTimeout(() => {
       if (videoRef.current && videoRef.current.readyState < 3) {
         setVideoStatus("error");
       }
-    }, 8000);
+    }, 15000);
 
     return () => {
       video.removeEventListener("canplay", handleCanPlay);
@@ -255,19 +252,19 @@ export const LiveDemoPanel = () => {
     };
   }, []);
 
-  const videoSrc = "./demo-video.mp4";
+  const videoSrc = "https://res.cloudinary.com/djbuumzmi/video/upload/c_crop,g_center,ar_16:10/v1774516176/demo-video_ghh6ym.mp4";
 
   return (
     <>
       {videoStatus !== "error" && (
         <div
-          className={`w-full max-w-5xl mx-auto mt-10 mb-12 rounded-2xl border border-neutral-200 shadow-xl overflow-hidden ${
+          className={`w-full max-w-3xl mx-auto mt-10 mb-12 rounded-2xl border-2 border-orange-200 shadow-xl overflow-hidden ${
             videoStatus === "loading" ? "hidden" : ""
           }`}
         >
           <video
             ref={videoRef}
-            className="w-full block object-cover aspect-[16/10]"
+            className="w-full block"
             autoPlay
             loop
             muted

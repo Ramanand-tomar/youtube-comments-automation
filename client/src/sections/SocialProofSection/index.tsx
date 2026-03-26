@@ -108,7 +108,7 @@ export function SocialProofSection() {
           {awards.map((a, i) => (
             <div
               key={i}
-              className="relative w-[120px] group"
+              className="relative w-[calc(50%-12px)] sm:w-[120px] group"
             >
               {/* Shield shape */}
               <div className="bg-white rounded-t-xl rounded-b-[2rem] px-4 pt-5 pb-6 text-center shadow-lg shadow-black/20 group-hover:scale-105 transition-transform">
@@ -138,7 +138,7 @@ export function SocialProofSection() {
         </div>
 
         {/* Stats row */}
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {stats.map((s, i) => {
             const count = useCountUp(s.value, 2000, visible);
             return (
