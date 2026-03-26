@@ -6,7 +6,7 @@ import {
   Search, Loader2, Lightbulb, ThumbsUp, ThumbsDown,
   Trophy, HelpCircle, MessageSquare, ChevronDown, ChevronUp,
   ArrowLeft, BarChart3, Eye, Heart, Play, ExternalLink,
-  CheckCircle2, CircleDot, Trash2, AlertTriangle, X,
+  CheckCircle2, CircleDot, Trash2, AlertTriangle, X, MessageCircle,
 } from "lucide-react";
 import { api } from "../api/client";
 import { Navbar } from "../sections/Navbar";
@@ -17,6 +17,7 @@ const CATEGORIES = [
   { key: "negative",      label: "Negative Feedback",      icon: ThumbsDown,  color: "#ef4444", bg: "bg-red-100",    text: "text-red-600",    border: "border-red-200"    },
   { key: "success_story", label: "Success Stories",         icon: Trophy,      color: "#a855f7", bg: "bg-purple-100", text: "text-purple-600", border: "border-purple-200" },
   { key: "query",         label: "Customer Queries",        icon: HelpCircle,  color: "#f59e0b", bg: "bg-amber-100",  text: "text-amber-600",  border: "border-amber-200"  },
+  { key: "irrelevant",    label: "Generic Comments",      icon: MessageCircle, color: "#a3a3a3", bg: "bg-neutral-100", text: "text-neutral-500", border: "border-neutral-200" },
 ];
 
 function ChartTooltip({ active, payload }) {
@@ -305,17 +306,14 @@ export default function VideoAnalytics() {
     }
   }
 
-  const classifiedTotal = results
-    ? results.summary.total - (results.summary.irrelevant || 0)
-    : 0;
-
+  const total = results ? results.summary.total : 0;
   const pieData = results
     ? CATEGORIES.map((cat) => ({
         name: cat.label,
         value: results.summary[cat.key] || 0,
         color: cat.color,
-        pct: classifiedTotal > 0
-          ? Math.round(((results.summary[cat.key] || 0) / classifiedTotal) * 100)
+        pct: total > 0
+          ? Math.round(((results.summary[cat.key] || 0) / total) * 100)
           : 0,
       })).filter((d) => d.value > 0)
     : [];
@@ -479,7 +477,7 @@ export default function VideoAnalytics() {
             )}
 
             {/* Summary stat cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
               <StatCard
                 icon={MessageSquare}
                 label="Total Comments"

@@ -44,6 +44,7 @@ function groupByCategory(comments) {
     negative: [],
     success_story: [],
     query: [],
+    irrelevant: [],
   };
   for (const comment of comments) {
     for (const cat of comment.categories) {
@@ -83,11 +84,20 @@ router.post("/analyze", rateLimit, async (req, res) => {
           await cached.save();
         }
       }
+      // Backfill irrelevant count for old cached entries
+      const summary = { ...cached.summary };
+      if (summary.irrelevant == null) {
+        const irrelevantComments = (cached.comments || []).filter(
+          (c) => c.categories && c.categories.length === 1 && c.categories[0] === "irrelevant"
+        );
+        summary.irrelevant = irrelevantComments.length;
+      }
+
       return res.json({
         videoId: cached.videoId,
         videoInfo: videoInfo || {},
         totalFetched: cached.totalFetched,
-        summary: cached.summary,
+        summary,
         categories: groupByCategory(cached.comments),
         cached: true,
       });

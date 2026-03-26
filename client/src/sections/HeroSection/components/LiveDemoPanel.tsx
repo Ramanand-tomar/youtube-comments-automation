@@ -34,7 +34,6 @@ const AnimationFallback = () => {
 
   return (
     <div
-      id="live-demo-root"
       className="w-full max-w-5xl mx-auto mt-10 mb-12 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden"
     >
       <div className="bg-neutral-50 border-b border-neutral-200 px-4 py-3 flex items-center justify-between">
@@ -252,19 +251,19 @@ export const LiveDemoPanel = () => {
     };
   }, []);
 
-  const videoSrc = "https://res.cloudinary.com/djbuumzmi/video/upload/c_crop,g_center,ar_16:10/v1774516176/demo-video_ghh6ym.mp4";
+  const videoSrc = "https://res.cloudinary.com/djbuumzmi/video/upload/v1774516176/demo-video_ghh6ym.mp4";
 
   return (
-    <>
+    <div id="live-demo-root" className="scroll-mt-20">
       {videoStatus !== "error" && (
         <div
-          className={`w-full max-w-3xl mx-auto mt-10 mb-12 rounded-2xl border-2 border-orange-200 shadow-xl overflow-hidden ${
+          className={`w-full max-w-5xl mx-auto mt-10 mb-12 rounded-2xl border-2 border-orange-200 shadow-xl overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-white ${
             videoStatus === "loading" ? "hidden" : ""
           }`}
         >
           <video
             ref={videoRef}
-            className="w-full block"
+            className="w-full block aspect-video object-cover"
             autoPlay
             loop
             muted
@@ -275,6 +274,6 @@ export const LiveDemoPanel = () => {
       )}
 
       {(videoStatus === "loading" || videoStatus === "error") && <AnimationFallback />}
-    </>
+    </div>
   );
 };
