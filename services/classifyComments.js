@@ -158,4 +158,54 @@ async function classifyComments(comments) {
   return { classified, summary };
 }
 
-module.exports = classifyComments;
+async function classifyCommentsWithProgress(comments, job) {
+  const categoryMap = {};
+  const totalBatches = Math.ceil(comments.length / BATCH_SIZE);
+
+  for (let i = 0; i < comments.length; i += BATCH_SIZE) {
+    const batch = comments.slice(i, i + BATCH_SIZE);
+    const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+
+    try {
+      const batchResult = await classifyBatch(batch, i);
+      Object.assign(categoryMap, batchResult);
+    } catch (err) {
+      console.error(`Classification batch error (index ${i}):`, err.message);
+    }
+
+    // Update progress: 40% to 90% range for classification
+    const classifyProgress = 40 + Math.round((batchNum / totalBatches) * 50);
+    job.progress = Math.min(classifyProgress, 90);
+    job.currentStep = `Classifying comments with AI (batch ${batchNum}/${totalBatches})...`;
+    await job.save();
+  }
+
+  const summary = {
+    suggestion: 0,
+    appreciation: 0,
+    negative: 0,
+    success_story: 0,
+    query: 0,
+    irrelevant: 0,
+    total: comments.length,
+  };
+
+  const DISPLAY_CATEGORIES = ["suggestion", "appreciation", "negative", "success_story", "query"];
+
+  const classified = comments.map((comment, idx) => {
+    const categories = categoryMap[idx] || ["irrelevant"];
+    const displayCats = categories.filter((c) => DISPLAY_CATEGORIES.includes(c));
+    if (displayCats.length > 0) {
+      for (const cat of displayCats) {
+        summary[cat]++;
+      }
+    } else {
+      summary.irrelevant++;
+    }
+    return { ...comment, categories: displayCats.length > 0 ? displayCats : ["irrelevant"] };
+  });
+
+  return { classified, summary };
+}
+
+module.exports = { classifyComments, classifyCommentsWithProgress };

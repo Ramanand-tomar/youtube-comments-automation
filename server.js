@@ -30,14 +30,27 @@ if (missingVars.length > 0) {
 
 // Connect to MongoDB
 connectDB()
-  .then(() => {
+  .then(async () => {
     console.log("Database connection successful. Initializing crons...");
     initAllCrons();
+
+    // Mark stale in-progress analysis jobs as failed (e.g. from server restart)
+    const AnalysisJob = require("./models/AnalysisJob");
+    const stale = await AnalysisJob.updateMany(
+      { status: { $nin: ["completed", "failed"] } },
+      { status: "failed", error: "Server restarted during processing. Please try again." }
+    );
+    if (stale.modifiedCount > 0) {
+      console.log(`Marked ${stale.modifiedCount} stale analysis job(s) as failed.`);
+    }
   })
   .catch((err) => {
     console.error("FAILED to initialize server:", err.message);
     process.exit(1);
   });
+
+// Trust proxy for correct req.ip behind reverse proxy (Render, etc.)
+app.set("trust proxy", 1);
 
 // Middleware
 app.use(cors({
