@@ -6,8 +6,11 @@ import {
   Search, Loader2, Lightbulb, ThumbsUp, ThumbsDown,
   Trophy, HelpCircle, MessageSquare, ChevronDown, ChevronUp,
   ArrowLeft, BarChart3, Eye, Heart, Play, ExternalLink,
-  CheckCircle2, CircleDot, Trash2, AlertTriangle, X, MessageCircle,
+  CheckCircle2, CircleDot, X, MessageCircle,
+  Mail, Bell, Send, CheckCircle, Clock, History, LogIn,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
 import { Navbar } from "../sections/Navbar";
 
@@ -44,62 +47,33 @@ function StatCard({ icon: Icon, label, value, color, bgClass, textClass, borderC
 }
 
 const PROGRESS_STEPS = [
-  { label: "Fetching video info", duration: 2000 },
-  { label: "Retrieving comments from YouTube", duration: 4000 },
-  { label: "Classifying comments with AI", duration: 6000 },
-  { label: "Generating analytics report", duration: 3000 },
+  { key: "fetching_info", label: "Fetching video information" },
+  { key: "fetching_comments", label: "Retrieving comments from YouTube" },
+  { key: "classifying", label: "Classifying comments with AI" },
+  { key: "saving", label: "Generating analytics report" },
 ];
 
-function AnalysisProgress({ loading }) {
-  const [activeStep, setActiveStep] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const intervalRef = useRef(null);
+function AnalysisProgress({ jobStatus }) {
+  if (!jobStatus || jobStatus.status === "completed") return null;
 
-  useEffect(() => {
-    if (!loading) {
-      setActiveStep(0);
-      setProgress(0);
-      return;
-    }
-
-    let step = 0;
-    let elapsed = 0;
-    const totalDuration = PROGRESS_STEPS.reduce((s, p) => s + p.duration, 0);
-    const tick = 100;
-
-    intervalRef.current = setInterval(() => {
-      elapsed += tick;
-
-      // Calculate cumulative duration up to current step
-      let cumulative = 0;
-      for (let i = 0; i <= step; i++) cumulative += PROGRESS_STEPS[i].duration;
-
-      if (elapsed >= cumulative && step < PROGRESS_STEPS.length - 1) {
-        step++;
-        setActiveStep(step);
-      }
-
-      // Progress goes up to 95% max (completes on actual response)
-      const pct = Math.min((elapsed / totalDuration) * 95, 95);
-      setProgress(pct);
-    }, tick);
-
-    return () => clearInterval(intervalRef.current);
-  }, [loading]);
-
-  if (!loading) return null;
+  const progress = jobStatus.progress || 0;
+  const currentStatus = jobStatus.status;
+  const stepOrder = PROGRESS_STEPS.map((s) => s.key);
+  const currentIdx = stepOrder.indexOf(currentStatus);
 
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 mb-8">
       {/* Progress bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-neutral-700">Analyzing video...</span>
+          <span className="text-sm font-semibold text-neutral-700">
+            {jobStatus.currentStep || "Analyzing video..."}
+          </span>
           <span className="text-sm font-bold text-orange-600">{Math.round(progress)}%</span>
         </div>
         <div className="w-full h-2.5 bg-neutral-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-300 ease-out"
+            className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -108,10 +82,10 @@ function AnalysisProgress({ loading }) {
       {/* Steps */}
       <div className="space-y-3">
         {PROGRESS_STEPS.map((step, i) => {
-          const isDone = i < activeStep;
-          const isActive = i === activeStep;
+          const isDone = i < currentIdx;
+          const isActive = i === currentIdx;
           return (
-            <div key={i} className="flex items-center gap-3">
+            <div key={step.key} className="flex items-center gap-3">
               {isDone ? (
                 <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
               ) : isActive ? (
@@ -126,6 +100,11 @@ function AnalysisProgress({ loading }) {
           );
         })}
       </div>
+
+      {/* Time estimate */}
+      <p className="text-xs text-neutral-400 mt-4 text-center">
+        This usually takes 1-5 minutes depending on the number of comments.
+      </p>
     </div>
   );
 }
@@ -213,12 +192,15 @@ function CommentAccordion({ category, comments }) {
   );
 }
 
-function ConfirmModal({ open, onClose, onConfirm, deleting }) {
+function NotifyModal({ open, onClose, onSubmit, submitting, submitted }) {
+  const [inputEmail, setInputEmail] = useState("");
+
   if (!open) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in">
         <button
           type="button"
           onClick={onClose}
@@ -226,40 +208,85 @@ function ConfirmModal({ open, onClose, onConfirm, deleting }) {
         >
           <X className="w-5 h-5" />
         </button>
-        <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-            <AlertTriangle className="w-6 h-6 text-red-600" />
-          </div>
-          <h3 className="text-lg font-bold text-neutral-900 mb-1">Clear Analysis?</h3>
-          <p className="text-sm text-neutral-500 mb-6">
-            This will delete the cached analysis from the database. You can re-analyze the video anytime.
-          </p>
-          <div className="flex gap-3 w-full">
+
+        {submitted ? (
+          <div className="flex flex-col items-center text-center py-4">
+            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <CheckCircle className="w-7 h-7 text-green-600" />
+            </div>
+            <h3 className="text-lg font-bold text-neutral-900 mb-1">You're all set!</h3>
+            <p className="text-sm text-neutral-500 mb-5">
+              We'll email you when your analysis is ready. You can close this tab safely.
+            </p>
             <button
               type="button"
               onClick={onClose}
-              disabled={deleting}
-              className="flex-1 px-4 py-2.5 text-sm font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
+              className="px-6 py-2.5 text-sm font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl transition-colors cursor-pointer"
             >
-              No, Keep It
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={deleting}
-              className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:bg-red-300 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {deleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Yes, Clear It"
-              )}
+              Got it
             </button>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center mb-4">
+              <Bell className="w-7 h-7 text-orange-600" />
+            </div>
+            <h3 className="text-lg font-bold text-neutral-900 mb-1">Analysis in progress!</h3>
+            <p className="text-sm text-neutral-500 mb-1">
+              This can take <strong>1-10 minutes</strong> depending on the number of comments.
+            </p>
+            <p className="text-sm text-neutral-500 mb-5">
+              Want us to notify you when it's done?
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (inputEmail.trim()) onSubmit(inputEmail.trim());
+              }}
+              className="w-full"
+            >
+              <div className="relative mb-3">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  type="email"
+                  value={inputEmail}
+                  onChange={(e) => setInputEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full pl-10 pr-4 py-3 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-colors"
+                  disabled={submitting}
+                  autoFocus
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={submitting || !inputEmail.trim()}
+                className="w-full px-4 py-3 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 disabled:bg-neutral-300 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Subscribing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Notify Me
+                  </>
+                )}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-3 text-xs text-neutral-400 hover:text-neutral-600 transition-colors cursor-pointer"
+            >
+              No thanks, I'll wait here
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -267,43 +294,155 @@ function ConfirmModal({ open, onClose, onConfirm, deleting }) {
 
 export default function VideoAnalytics() {
   const [videoUrl, setVideoUrl] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [jobId, setJobId] = useState(null);
+  const [jobStatus, setJobStatus] = useState(null);
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [notifySubmitting, setNotifySubmitting] = useState(false);
+  const [notifySubmitted, setNotifySubmitted] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [dailyLimit, setDailyLimit] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const pollingRef = useRef(null);
+
+  const [searchParams] = useSearchParams();
+  const { user, login, isAuthenticated } = useAuth();
+  const polling = !!jobId;
+
+  // Fetch history on mount
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  async function loadHistory() {
+    try {
+      const data = await api.getAnalysisHistory();
+      setHistory(data.history || []);
+      setDailyLimit(data.dailyLimit || null);
+    } catch {
+      // Silently fail — history is non-critical
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  // Auto-load results from email link (?videoId=...)
+  useEffect(() => {
+    const vid = searchParams.get("videoId");
+    if (vid && !results && !jobId) {
+      setVideoUrl(`https://www.youtube.com/watch?v=${vid}`);
+      api.startAnalysis(`https://www.youtube.com/watch?v=${vid}`).then((data) => {
+        if (data.cached) {
+          setResults(data);
+          loadHistory();
+        } else {
+          setJobId(data.jobId);
+          setJobStatus({ status: data.status, progress: data.progress, currentStep: data.currentStep });
+        }
+      }).catch((err) => setError(err.message));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Polling effect
+  useEffect(() => {
+    if (!jobId) return;
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const status = await api.getAnalysisStatus(jobId);
+        setJobStatus(status);
+
+        if (status.status === "completed") {
+          clearInterval(pollingRef.current);
+          setJobId(null);
+          setJobStatus(null);
+          setResults(status);
+          loadHistory();
+        } else if (status.status === "failed") {
+          clearInterval(pollingRef.current);
+          setJobId(null);
+          setJobStatus(null);
+          setError(status.error || "Analysis failed. Please try again.");
+        }
+      } catch (err) {
+        console.error("Poll error:", err);
+      }
+    }, 3000);
+
+    return () => clearInterval(pollingRef.current);
+  }, [jobId]);
 
   async function handleAnalyze(e) {
     e.preventDefault();
     if (!videoUrl.trim()) return;
 
-    setLoading(true);
     setError(null);
     setResults(null);
+    setJobStatus(null);
+    setNotifySubmitted(false);
 
     try {
-      const data = await api.analyzeVideo(videoUrl.trim());
-      setResults(data);
+      const data = await api.startAnalysis(videoUrl.trim());
+
+      if (data.cached) {
+        setResults(data);
+        loadHistory();
+      } else if (data.dailyLimit && !data.dailyLimit.canAnalyze) {
+        setError(data.error || "Daily analysis limit reached.");
+        setDailyLimit(data.dailyLimit);
+      } else {
+        setJobId(data.jobId);
+        setJobStatus({ status: data.status, progress: data.progress, currentStep: data.currentStep });
+        setShowNotifyModal(true);
+        loadHistory();
+      }
     } catch (err) {
-      setError(err.message || "Failed to analyze video. Please try again.");
-    } finally {
-      setLoading(false);
+      // Check if error response includes daily limit info
+      if (err.message?.includes("Daily analysis limit")) {
+        setDailyLimit({ used: 1, max: 1, canAnalyze: false, resetsAt: null });
+      }
+      setError(err.message || "Failed to start analysis. Please try again.");
     }
   }
 
-  async function handleDelete() {
-    if (!results?.videoId) return;
-    setDeleting(true);
+  async function handleNotifySubmit(emailValue) {
+    if (!jobId) return;
+    setNotifySubmitting(true);
     try {
-      await api.deleteAnalysis(results.videoId);
-      setResults(null);
-      setShowDeleteModal(false);
+      await api.subscribeNotify(jobId, emailValue);
+      setNotifySubmitted(true);
     } catch (err) {
-      setError(err.message || "Failed to delete analysis.");
-      setShowDeleteModal(false);
+      setError(err.message || "Failed to subscribe for notifications.");
+      setShowNotifyModal(false);
     } finally {
-      setDeleting(false);
+      setNotifySubmitting(false);
     }
+  }
+
+  async function handleRemoveFromHistory(videoId) {
+    try {
+      await api.removeFromHistory(videoId);
+      setHistory((prev) => prev.filter((h) => h.videoId !== videoId));
+    } catch {
+      // Silently fail
+    }
+  }
+
+  function handleHistoryClick(vid) {
+    setVideoUrl(`https://www.youtube.com/watch?v=${vid}`);
+    setError(null);
+    setResults(null);
+    setJobStatus(null);
+    api.startAnalysis(`https://www.youtube.com/watch?v=${vid}`).then((data) => {
+      if (data.cached) {
+        setResults(data);
+      } else if (data.jobId) {
+        setJobId(data.jobId);
+        setJobStatus({ status: data.status, progress: data.progress, currentStep: data.currentStep });
+        setShowNotifyModal(true);
+      }
+    }).catch((err) => setError(err.message));
   }
 
   const total = results ? results.summary.total : 0;
@@ -320,7 +459,6 @@ export default function VideoAnalytics() {
 
   return (
     <div className="min-h-screen bg-neutral-50 font-inter">
-      <Navbar />
 
       <main className="max-w-[1100px] mx-auto px-4 md:px-6 py-8">
         {/* Back link */}
@@ -346,6 +484,23 @@ export default function VideoAnalytics() {
           </div>
         </div>
 
+        {/* Login prompt for anonymous users */}
+        {!isAuthenticated && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mb-6 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm text-blue-700">
+              <LogIn className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+              Sign in with Google to save your analysis history across devices.
+            </p>
+            <button
+              type="button"
+              onClick={login}
+              className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors cursor-pointer shrink-0"
+            >
+              Sign in
+            </button>
+          </div>
+        )}
+
         {/* Input form */}
         <form onSubmit={handleAnalyze} className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 mb-8">
           <label htmlFor="video-url" className="text-sm font-bold text-neutral-700 mb-2 block">
@@ -361,15 +516,15 @@ export default function VideoAnalytics() {
                 onChange={(e) => setVideoUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
                 className="w-full pl-10 pr-4 py-3 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-colors"
-                disabled={loading}
+                disabled={polling}
               />
             </div>
             <button
               type="submit"
-              disabled={loading || !videoUrl.trim()}
+              disabled={polling || !videoUrl.trim()}
               className="px-6 py-3 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 disabled:bg-neutral-300 disabled:cursor-not-allowed rounded-xl transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             >
-              {loading ? (
+              {polling ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Analyzing...
@@ -379,10 +534,26 @@ export default function VideoAnalytics() {
               )}
             </button>
           </div>
+
+          {/* Daily limit indicator */}
+          {dailyLimit && (
+            <div className={`mt-3 flex items-center gap-2 text-xs ${dailyLimit.canAnalyze ? "text-green-600" : "text-amber-600"}`}>
+              <Clock className="w-3.5 h-3.5" />
+              {dailyLimit.canAnalyze ? (
+                <span>You have <strong>1 free analysis</strong> remaining today. Previously analyzed videos are always free.</span>
+              ) : (
+                <span>
+                  Daily limit reached. {dailyLimit.resetsAt && (
+                    <>Resets at {new Date(dailyLimit.resetsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} UTC.</>
+                  )} Previously analyzed videos are always free.
+                </span>
+              )}
+            </div>
+          )}
         </form>
 
         {/* Progress tracker */}
-        <AnalysisProgress loading={loading} />
+        <AnalysisProgress jobStatus={jobStatus} />
 
         {/* Error state */}
         {error && (
@@ -391,29 +562,18 @@ export default function VideoAnalytics() {
           </div>
         )}
 
-        {/* Confirm delete modal */}
-        <ConfirmModal
-          open={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={handleDelete}
-          deleting={deleting}
+        {/* Notify me modal - shown when processing starts */}
+        <NotifyModal
+          open={showNotifyModal}
+          onClose={() => setShowNotifyModal(false)}
+          onSubmit={handleNotifySubmit}
+          submitting={notifySubmitting}
+          submitted={notifySubmitted}
         />
 
         {/* Results */}
         {results && (
           <div className="space-y-6">
-            {/* Clear analysis button */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear Analysis
-              </button>
-            </div>
-
             {/* Video info panel */}
             {results.videoInfo?.title && (
               <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
@@ -463,6 +623,11 @@ export default function VideoAnalytics() {
                         <span className="flex items-center gap-1">
                           <MessageSquare className="w-3.5 h-3.5" />
                           {results.videoInfo.commentCount.toLocaleString()} comments
+                          {results.summary?.total != null && results.videoInfo.commentCount > results.summary.total && (
+                            <span className="text-neutral-400">
+                              ({results.summary.total.toLocaleString()} top-level · {(results.videoInfo.commentCount - results.summary.total).toLocaleString()} replies)
+                            </span>
+                          )}
                         </span>
                       )}
                       {results.videoInfo.publishedAt && (
@@ -557,6 +722,72 @@ export default function VideoAnalytics() {
                 )}
               </p>
             )}
+          </div>
+        )}
+        {/* Past Analytics History */}
+        {!historyLoading && history.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="w-5 h-5 text-neutral-500" />
+              <h2 className="text-base font-bold text-neutral-900">Your Past Analyses</h2>
+              <span className="text-xs text-neutral-400 ml-1">({history.length})</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {history.map((item) => (
+                <div
+                  key={item.videoId}
+                  className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden hover:border-orange-300 transition-colors group"
+                >
+                  {/* Clickable area */}
+                  <button
+                    type="button"
+                    onClick={() => handleHistoryClick(item.videoId)}
+                    className="w-full text-left cursor-pointer"
+                  >
+                    {item.thumbnail ? (
+                      <img
+                        src={item.thumbnail}
+                        alt={item.title || item.videoId}
+                        className="w-full h-36 object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-36 bg-neutral-100 flex items-center justify-center">
+                        <Play className="w-10 h-10 text-neutral-300" />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <p className="text-sm font-bold text-neutral-900 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                        {item.title || item.videoId}
+                      </p>
+                      {item.channelTitle && (
+                        <p className="text-xs text-neutral-500 mt-1">{item.channelTitle}</p>
+                      )}
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-neutral-400">
+                          {item.totalComments > 0 ? `${item.totalComments} comments` : ""}
+                        </span>
+                        <span className="text-xs text-neutral-400">
+                          {new Date(item.analyzedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                      </div>
+                      {!item.isComplete && (
+                        <p className="text-xs text-amber-600 mt-2 font-medium">Analysis unavailable — re-analyze to refresh</p>
+                      )}
+                    </div>
+                  </button>
+                  {/* Remove from history */}
+                  <div className="px-4 pb-3">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFromHistory(item.videoId)}
+                      className="text-[0.65rem] text-neutral-400 hover:text-red-500 transition-colors cursor-pointer"
+                    >
+                      Remove from history
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>

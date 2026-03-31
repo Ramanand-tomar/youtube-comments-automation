@@ -42,11 +42,24 @@ export const api = {
     }),
 
   // Public Analytics
-  analyzeVideo: (videoUrl) =>
+  startAnalysis: (videoUrl, email) =>
     request("/public/analyze", {
       method: "POST",
-      body: JSON.stringify({ videoUrl }),
+      body: JSON.stringify({ videoUrl, email: email || undefined }),
+    }),
+  getAnalysisStatus: (jobId) =>
+    request(`/public/analyze/status/${jobId}`),
+  subscribeNotify: (jobId, email) =>
+    request(`/public/analyze/notify/${jobId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ email }),
     }),
   deleteAnalysis: (videoId) =>
     request(`/public/analyze/${videoId}`, { method: "DELETE" }),
+  removeFromHistory: (videoId) =>
+    request(`/public/analyze/history/${videoId}`, { method: "DELETE" }),
+  getAnalysisHistory: () =>
+    request("/public/analyze/history"),
+  migrateHistory: () =>
+    request("/public/analyze/migrate-history", { method: "POST" }),
 };

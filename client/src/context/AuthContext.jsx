@@ -20,7 +20,13 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem("token");
     if (token) {
       api.getMe()
-        .then((data) => setUser(data.user))
+        .then((data) => {
+          setUser(data.user);
+          // Migrate IP-based analytics history to this account on OAuth callback
+          if (tokenFromUrl) {
+            api.migrateHistory().catch(() => {});
+          }
+        })
         .catch(() => localStorage.removeItem("token"))
         .finally(() => setLoading(false));
     } else {
