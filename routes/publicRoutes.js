@@ -122,26 +122,10 @@ router.post("/analyze", rateLimit, async (req, res) => {
 
     const { userIdentifier, identifierType } = getUserIdentity(req);
 
-    // 1. Check if THIS USER already analyzed this video
-    const userEntry = await UserAnalytics.findOne({ userIdentifier, identifierType, videoId });
-    if (userEntry) {
-      // User has seen this before — return cached result (no daily limit consumed)
-      const cached = await AnalyzedVideo.findOne({ videoId });
-      if (cached) {
-        // Backfill videoInfo for old entries
-        if (!cached.videoInfo || !cached.videoInfo.title) {
-          const videoInfo = await fetchVideoInfo(videoId);
-          if (videoInfo.title) {
-            cached.videoInfo = videoInfo;
-            await cached.save();
-          }
-        }
-        userEntry.lastAccessedAt = new Date();
-        await userEntry.save();
-        return res.json({ cached: true, ...buildResultResponse(cached) });
-      }
-
-      // UserAnalytics exists but AnalyzedVideo was deleted (dangling ref) — check for in-progress job
+    // 1. Check if there's already an in-progress job for this video for this user
+    const existingUserEntry = await UserAnalytics.findOne({ userIdentifier, identifierType, videoId });
+    if (existingUserEntry) {
+      // Check for in-progress job
       const inProgressJob = await AnalysisJob.findOne({
         videoId,
         status: { $nin: ["completed", "failed"] },
@@ -156,44 +140,43 @@ router.post("/analyze", rateLimit, async (req, res) => {
         });
       }
 
-      // Dangling ref — remove stale entry so user can re-analyze
-      await UserAnalytics.deleteOne({ _id: userEntry._id });
-    }
-
-    // 2. Check global cache (another user may have analyzed this video)
-    const globalCached = await AnalyzedVideo.findOne({ videoId });
-    if (globalCached) {
-      if (!globalCached.videoInfo || !globalCached.videoInfo.title) {
-        const videoInfo = await fetchVideoInfo(videoId);
-        if (videoInfo.title) {
-          globalCached.videoInfo = videoInfo;
-          await globalCached.save();
+      // Same user, same video — return cached result directly
+      const cached = await AnalyzedVideo.findOne({ videoId });
+      if (cached) {
+        if (!cached.videoInfo || !cached.videoInfo.title) {
+          const videoInfo = await fetchVideoInfo(videoId);
+          if (videoInfo.title) {
+            cached.videoInfo = videoInfo;
+            await cached.save();
+          }
         }
+        existingUserEntry.lastAccessedAt = new Date();
+        await existingUserEntry.save();
+        return res.json({ cached: true, ...buildResultResponse(cached) });
       }
-      // Create UserAnalytics entry — no daily limit consumed (no API calls needed)
-      await UserAnalytics.create({
-        userIdentifier,
-        identifierType,
-        videoId,
-        analyzedVideo: globalCached._id,
-        analyzedAt: new Date(),
-        lastAccessedAt: new Date(),
-      });
-      return res.json({ cached: true, ...buildResultResponse(globalCached) });
+
+      // Dangling ref — remove stale entry so user can re-analyze
+      await UserAnalytics.deleteOne({ _id: existingUserEntry._id });
     }
 
-    // 3. Check daily limit (only for NEW analyses that require API calls)
-    const todayUsage = await getDailyUsage(userIdentifier, identifierType);
-    if (todayUsage >= DAILY_LIMIT) {
-      return res.status(429).json({
-        error: "Daily analysis limit reached. You can analyze 1 new video per day.",
-        dailyLimit: {
-          used: todayUsage,
-          max: DAILY_LIMIT,
-          canAnalyze: false,
-          resetsAt: getResetTime(),
-        },
-      });
+    // 2. For new users — always show progress UI (even if global cache exists)
+    // Global cache will be used inside processAnalysisJob (simulated progress)
+
+    // 3. Check daily limit (only when no global cache — fresh analysis needs API calls)
+    const globalCached = await AnalyzedVideo.findOne({ videoId });
+    if (!globalCached) {
+      const todayUsage = await getDailyUsage(userIdentifier, identifierType);
+      if (todayUsage >= DAILY_LIMIT) {
+        return res.status(429).json({
+          error: "Daily analysis limit reached. You can analyze 1 new video per day.",
+          dailyLimit: {
+            used: todayUsage,
+            max: DAILY_LIMIT,
+            canAnalyze: false,
+            resetsAt: getResetTime(),
+          },
+        });
+      }
     }
 
     // 4. Check for existing in-progress job
@@ -230,14 +213,11 @@ router.post("/analyze", rateLimit, async (req, res) => {
       email: email || null,
     });
 
-    await UserAnalytics.create({
-      userIdentifier,
-      identifierType,
-      videoId,
-      analyzedVideo: null,
-      analyzedAt: new Date(),
-      lastAccessedAt: new Date(),
-    });
+    await UserAnalytics.findOneAndUpdate(
+      { userIdentifier, identifierType, videoId },
+      { lastAccessedAt: new Date(), analyzedVideo: null },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
 
     processAnalysisJob(jobId).catch((err) => {
       console.error(`Background job ${jobId} crashed:`, err.message);

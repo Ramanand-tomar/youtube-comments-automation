@@ -298,6 +298,7 @@ export default function VideoAnalytics() {
   const [results, setResults] = useState(null);
   const [jobId, setJobId] = useState(null);
   const [jobStatus, setJobStatus] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifySubmitting, setNotifySubmitting] = useState(false);
   const [notifySubmitted, setNotifySubmitted] = useState(false);
@@ -336,7 +337,7 @@ export default function VideoAnalytics() {
         if (data.cached) {
           setResults(data);
           loadHistory();
-        } else {
+        } else if (data.jobId) {
           setJobId(data.jobId);
           setJobStatus({ status: data.status, progress: data.progress, currentStep: data.currentStep });
         }
@@ -381,6 +382,7 @@ export default function VideoAnalytics() {
     setResults(null);
     setJobStatus(null);
     setNotifySubmitted(false);
+    setSubmitting(true);
 
     try {
       const data = await api.startAnalysis(videoUrl.trim());
@@ -388,14 +390,14 @@ export default function VideoAnalytics() {
       if (data.cached) {
         setResults(data);
         loadHistory();
-      } else if (data.dailyLimit && !data.dailyLimit.canAnalyze) {
-        setError(data.error || "Daily analysis limit reached.");
-        setDailyLimit(data.dailyLimit);
-      } else {
+      } else if (data.jobId) {
         setJobId(data.jobId);
         setJobStatus({ status: data.status, progress: data.progress, currentStep: data.currentStep });
         setShowNotifyModal(true);
         loadHistory();
+      } else if (data.dailyLimit && !data.dailyLimit.canAnalyze) {
+        setError(data.error || "Daily analysis limit reached.");
+        setDailyLimit(data.dailyLimit);
       }
     } catch (err) {
       // Check if error response includes daily limit info
@@ -403,6 +405,8 @@ export default function VideoAnalytics() {
         setDailyLimit({ used: 1, max: 1, canAnalyze: false, resetsAt: null });
       }
       setError(err.message || "Failed to start analysis. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -440,7 +444,6 @@ export default function VideoAnalytics() {
       } else if (data.jobId) {
         setJobId(data.jobId);
         setJobStatus({ status: data.status, progress: data.progress, currentStep: data.currentStep });
-        setShowNotifyModal(true);
       }
     }).catch((err) => setError(err.message));
   }
@@ -516,18 +519,18 @@ export default function VideoAnalytics() {
                 onChange={(e) => setVideoUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
                 className="w-full pl-10 pr-4 py-3 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-colors"
-                disabled={polling}
+                disabled={submitting || polling}
               />
             </div>
             <button
               type="submit"
-              disabled={polling || !videoUrl.trim()}
+              disabled={submitting || polling || !videoUrl.trim()}
               className="px-6 py-3 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 disabled:bg-neutral-300 disabled:cursor-not-allowed rounded-xl transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             >
-              {polling ? (
+              {submitting || polling ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing...
+                  {submitting ? "Starting..." : "Analyzing..."}
                 </>
               ) : (
                 "Analyze Comments"

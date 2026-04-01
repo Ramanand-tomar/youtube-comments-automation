@@ -17,6 +17,7 @@ async function processAnalysisJob(jobId) {
   if (!job) return;
 
   try {
+    // Always run fresh analysis for every user
     // Step 1: Fetch video info (0-10%)
     await updateJob(job, "fetching_info", 5, "Fetching video information...");
     const videoInfo = await fetchVideoInfo(job.videoId);
@@ -36,14 +37,11 @@ async function processAnalysisJob(jobId) {
     // Step 4: Save results (90-100%)
     await updateJob(job, "saving", 92, "Generating analytics report...");
 
-    const analyzed = await AnalyzedVideo.create({
-      videoId: job.videoId,
-      videoInfo,
-      comments: classified,
-      summary,
-      totalFetched,
-      analyzedAt: new Date(),
-    });
+    const analyzed = await AnalyzedVideo.findOneAndUpdate(
+      { videoId: job.videoId },
+      { videoInfo, comments: classified, summary, totalFetched, analyzedAt: new Date() },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     // Backfill UserAnalytics entries created before analysis completed
     await UserAnalytics.updateMany(
@@ -67,11 +65,36 @@ async function processAnalysisJob(jobId) {
     }
   } catch (err) {
     console.error(`Job ${jobId} failed:`, err.message);
+
+    // Fallback: if fresh analysis fails, try to use global cache
+    const fallback = await AnalyzedVideo.findOne({ videoId: job.videoId });
+    if (fallback) {
+      console.log(`Job ${jobId}: Using cached fallback for ${job.videoId}`);
+      await UserAnalytics.updateMany(
+        { videoId: job.videoId, analyzedVideo: null },
+        { analyzedVideo: fallback._id }
+      );
+
+      job.status = "completed";
+      job.progress = 100;
+      job.currentStep = "Analysis complete!";
+      job.result = fallback._id;
+      await job.save();
+
+      const freshJob = await AnalysisJob.findOne({ jobId });
+      if (freshJob?.email && !freshJob.emailSent) {
+        await sendCompletionEmail(freshJob.email, freshJob.videoId, fallback.videoInfo || {});
+        freshJob.emailSent = true;
+        await freshJob.save();
+      }
+      return;
+    }
+
+    // No fallback available — mark as failed
     job.status = "failed";
     job.error = err.message;
     await job.save();
 
-    // Re-read for email added while job was running
     const freshJob = await AnalysisJob.findOne({ jobId });
     if (freshJob?.email && !freshJob.emailSent) {
       await sendFailureEmail(freshJob.email, freshJob.videoId, err.message);
