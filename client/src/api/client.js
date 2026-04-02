@@ -7,7 +7,11 @@ async function request(path, options = {}) {
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
+  if (!res.ok) {
+    const err = new Error(data.error || "Request failed");
+    err.data = data; // Preserve full response (e.g. dailyLimit info on 429)
+    throw err;
+  }
   return data;
 }
 
@@ -54,8 +58,6 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ email }),
     }),
-  deleteAnalysis: (videoId) =>
-    request(`/public/analyze/${videoId}`, { method: "DELETE" }),
   removeFromHistory: (videoId) =>
     request(`/public/analyze/history/${videoId}`, { method: "DELETE" }),
   getAnalysisHistory: () =>

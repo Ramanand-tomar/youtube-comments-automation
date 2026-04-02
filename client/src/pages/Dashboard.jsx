@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
-import { ArrowLeft, LayoutDashboard, Video, Settings, Loader2, MessageSquare, RefreshCw, BarChart2 } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Video, Settings, Loader2, MessageSquare, RefreshCw, BarChart2, BarChart3 } from "lucide-react";
 import ConnectChannel from "../components/dashboard/ConnectChannel";
 import StatsCards from "../components/dashboard/StatsCards";
 import VideoList from "../components/dashboard/VideoList";
@@ -140,7 +140,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/analytics"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 text-[0.825rem] font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-xl transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Video Analytics
+            </Link>
             <div className="flex items-center gap-3 bg-warm-gray px-4 py-2 rounded-xl border border-warm-border">
               <div className="w-8 h-8 bg-brand-bg rounded-full flex items-center justify-center text-[0.75rem] font-bold text-brand">
                 {user?.email?.charAt(0).toUpperCase() || "U"}
@@ -166,6 +173,13 @@ export default function Dashboard() {
               {t.label}
             </button>
           ))}
+          <Link
+            to="/analytics"
+            className="flex items-center gap-2 px-5 py-2.5 text-[0.875rem] font-bold rounded-xl bg-orange-600 text-white whitespace-nowrap"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Video Analytics
+          </Link>
         </div>
       )}
 

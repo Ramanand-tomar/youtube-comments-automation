@@ -11,8 +11,15 @@ export function AuthProvider({ children }) {
     // Check for token in URL (from OAuth callback)
     const params = new URLSearchParams(window.location.search);
     const tokenFromUrl = params.get("token");
+    const returnTo = localStorage.getItem("auth_return_to");
     if (tokenFromUrl) {
       localStorage.setItem("token", tokenFromUrl);
+      localStorage.removeItem("auth_return_to");
+      // Redirect to the page user was on before OAuth (e.g. /analytics)
+      if (returnTo && returnTo !== window.location.pathname) {
+        window.location.replace(returnTo);
+        return; // Stop — page will reload at the correct path
+      }
       window.history.replaceState({}, "", window.location.pathname);
     }
 
@@ -35,6 +42,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async () => {
+    // Save current page so we can return after OAuth
+    localStorage.setItem("auth_return_to", window.location.pathname);
     const { url } = await api.getAuthUrl();
     window.location.href = url;
   };

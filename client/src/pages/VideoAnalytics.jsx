@@ -7,12 +7,11 @@ import {
   Trophy, HelpCircle, MessageSquare, ChevronDown, ChevronUp,
   ArrowLeft, BarChart3, Eye, Heart, Play, ExternalLink,
   CheckCircle2, CircleDot, X, MessageCircle,
-  Mail, Bell, Send, CheckCircle, Clock, History, LogIn,
+  Mail, Bell, Send, CheckCircle, Clock, History, LogIn, LogOut, User,
 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
-import { Navbar } from "../sections/Navbar";
 
 const CATEGORIES = [
   { key: "suggestion",    label: "Next Video Suggestions", icon: Lightbulb,   color: "#3b82f6", bg: "bg-blue-100",   text: "text-blue-600",   border: "border-blue-200"   },
@@ -308,7 +307,7 @@ export default function VideoAnalytics() {
   const pollingRef = useRef(null);
 
   const [searchParams] = useSearchParams();
-  const { user, login, isAuthenticated } = useAuth();
+  const { user, login, logout, isAuthenticated } = useAuth();
   const polling = !!jobId;
 
   // Fetch history on mount
@@ -400,9 +399,8 @@ export default function VideoAnalytics() {
         setDailyLimit(data.dailyLimit);
       }
     } catch (err) {
-      // Check if error response includes daily limit info
-      if (err.message?.includes("Daily analysis limit")) {
-        setDailyLimit({ used: 1, max: 1, canAnalyze: false, resetsAt: null });
+      if (err.data?.dailyLimit) {
+        setDailyLimit(err.data.dailyLimit);
       }
       setError(err.message || "Failed to start analysis. Please try again.");
     } finally {
@@ -487,8 +485,36 @@ export default function VideoAnalytics() {
           </div>
         </div>
 
-        {/* Login prompt for anonymous users */}
-        {!isAuthenticated && (
+        {/* Auth bar */}
+        {isAuthenticated ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-3 mb-6 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-green-800">{user?.name || user?.email?.split("@")[0]}</p>
+                <p className="text-xs text-green-600">Your history is synced across devices</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/dashboard"
+                className="text-xs font-semibold text-green-700 bg-green-100 hover:bg-green-200 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                className="text-xs font-semibold text-green-700 hover:text-red-600 px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <LogOut className="w-3 h-3" />
+                Sign out
+              </button>
+            </div>
+          </div>
+        ) : (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mb-6 flex items-center justify-between gap-4 flex-wrap">
             <p className="text-sm text-blue-700">
               <LogIn className="w-4 h-4 inline mr-1.5 -mt-0.5" />
@@ -524,7 +550,7 @@ export default function VideoAnalytics() {
             </div>
             <button
               type="submit"
-              disabled={submitting || polling || !videoUrl.trim()}
+              disabled={submitting || polling || !videoUrl.trim() || (dailyLimit && !dailyLimit.canAnalyze)}
               className="px-6 py-3 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 disabled:bg-neutral-300 disabled:cursor-not-allowed rounded-xl transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             >
               {submitting || polling ? (
