@@ -3,3 +3,4 @@ client/node_modules
 client/dist
 .env
 /.claude/*
+client/public/demo-video.mp4
