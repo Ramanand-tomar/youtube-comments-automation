@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: youtube-comments-automation
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
