@@ -2,7 +2,7 @@
 
 > A powerful full-stack AI automation tool that monitors your YouTube channel for new comments, generates personalized, human-like responses using Google Gemini AI, and automatically posts replies back to YouTube.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-brightgreen?style=for-the-badge&logo=vercel)](https://beyondchats-youtube-automation.vercel.app/dashboard)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-brightgreen?style=for-the-badge&logo=vercel)](https://beyondchats-youtube-automation.vercel.app)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?style=for-the-badge&logo=github)](https://github.com/Ramanand-tomar/youtube-comments-automation)
 
 ---
