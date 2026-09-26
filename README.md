@@ -14,6 +14,22 @@ Check out the live interactive dashboard:
 
 ---
 
+## 📸 Application Screenshots
+
+### Landing Page
+![Landing Page](docs/screenshots/landing.png)
+
+### Comments Overview & AI Replies
+![Comments Overview](docs/screenshots/overview.png)
+
+### Analytics Dashboard
+![Analytics Dashboard](docs/screenshots/analytics.png)
+
+### Automation & Cron Settings
+![Automation Settings](docs/screenshots/settings.png)
+
+---
+
 ## 🚀 Features
 
 - **Automated Monitoring**: Periodically scans your YouTube channel for new comments using background cron jobs.
@@ -129,6 +145,8 @@ npm start
 ├── config/              # Database & authentication config
 ├── controllers/         # API request handlers
 ├── cron/                # Scheduled cron job tasks
+├── docs/                # Project documentation & screenshots
+│   └── screenshots/     # Dashboard screenshots
 ├── middleware/          # JWT & Auth middleware
 ├── models/              # Mongoose database schemas
 ├── routes/              # Express API endpoints
